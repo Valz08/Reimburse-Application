@@ -12,19 +12,20 @@ COPY --from=composerbin /usr/bin/composer /usr/bin/composer
 # Copy seluruh source Laravel
 COPY . .
 
-# Install dependencies (tanpa dev packages & tanpa script artisan)
+# ✅ Pakai root sementara buat atur izin
+USER root
 RUN composer install \
     --no-dev \
     --prefer-dist \
     --no-interaction \
     --no-progress \
     --optimize-autoloader \
-    --no-scripts
+    --no-scripts && \
+    mkdir -p storage bootstrap/cache && \
+    chmod -R 777 storage bootstrap/cache
 
-# ✅ Fix permission secara manual (karena tidak ada /usr/libexec/s2i)
-RUN mkdir -p storage bootstrap/cache && \
-    find /opt/app-root/src -type d -exec chmod g+rwX {} + && \
-    find /opt/app-root/src -type f -exec chmod g+rw {} +
+# 🔁 Balik lagi ke user non-root untuk runtime (aman buat OpenShift)
+USER 1001
 
 EXPOSE 8000
 ENV PORT=8000
