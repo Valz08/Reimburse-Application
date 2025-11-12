@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm cache clean --force && npm install && vite build",
+    "build": "rm -rf node_modules package-lock.json && npm install && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
