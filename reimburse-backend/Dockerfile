@@ -1,7 +1,7 @@
 # --- Stage 1: Composer binary ---
 FROM docker.io/library/composer:2 AS composerbin
 
-# --- Stage 2: PHP runtime (OpenShift UBI) ---
+# --- Stage 2: PHP runtime (UBI 9) ---
 FROM registry.access.redhat.com/ubi9/php-82
 
 WORKDIR /opt/app-root/src
@@ -21,14 +21,15 @@ RUN composer install \
     --optimize-autoloader \
     --no-scripts
 
-# ✅ Fix permission agar bisa ditulis oleh user non-root (OpenShift 1001)
-RUN /usr/libexec/s2i/fix-permissions /opt/app-root/src
+# ✅ Fix permission secara manual (karena tidak ada /usr/libexec/s2i)
+RUN mkdir -p storage bootstrap/cache && \
+    find /opt/app-root/src -type d -exec chmod g+rwX {} + && \
+    find /opt/app-root/src -type f -exec chmod g+rw {} +
 
-# Port untuk Laravel
 EXPOSE 8000
 ENV PORT=8000
 
-# Jalankan Laravel dengan perintah startup yang lengkap
+# Jalankan Laravel di runtime container
 CMD ["bash", "-lc", "php artisan config:cache || true && \
 php artisan route:cache || true && \
 php artisan migrate --force || true && \
