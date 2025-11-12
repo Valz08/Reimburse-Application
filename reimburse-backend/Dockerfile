@@ -1,17 +1,29 @@
-# Gunakan base image PHP Laravel
+# --- Stage 1: add Composer binary ---
+FROM docker.io/library/composer:2 AS composerbin
+
+# --- Stage 2: runtime PHP (OpenShift UBI) ---
 FROM registry.access.redhat.com/ubi9/php-82
 
-# Set working directory
 WORKDIR /opt/app-root/src
+
+# Copy composer ke image runtime
+COPY --from=composerbin /usr/bin/composer /usr/bin/composer
 
 # Copy source Laravel
 COPY . .
 
-# Install dependencies
-RUN composer install --no-dev --optimize-autoloader
+# Install dependency Laravel tanpa dev dan optimize autoloader
+RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
 
-# Build cache dan route Laravel
-RUN php artisan config:cache && php artisan route:cache && php artisan view:cache
+# Set permission agar sesuai user non-root di OpenShift
+RUN chown -R 1001:0 /opt/app-root/src \
+ && chmod -R g=u storage bootstrap/cache \
+ && php artisan config:cache || true \
+ && php artisan route:cache || true \
+ && php artisan view:cache || true
 
 EXPOSE 8000
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+ENV PORT=8000
+
+# Jalankan Laravel
+CMD ["bash","-lc","php artisan migrate --force || true; php artisan serve --host=0.0.0.0 --port=${PORT}"]
