@@ -12,18 +12,15 @@ COPY --from=composerbin /usr/bin/composer /usr/bin/composer
 # Copy source Laravel
 COPY . .
 
-# Install dependency Laravel tanpa dev dan optimize autoloader
-RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
+# Install deps tanpa dev & skip artisan hook
+RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader --no-scripts
 
-# Set permission agar sesuai user non-root di OpenShift
+# Set permission supaya aman di OpenShift
 RUN chown -R 1001:0 /opt/app-root/src \
- && chmod -R g=u storage bootstrap/cache \
- && php artisan config:cache || true \
- && php artisan route:cache || true \
- && php artisan view:cache || true
+ && chmod -R g=u storage bootstrap/cache
 
 EXPOSE 8000
 ENV PORT=8000
 
-# Jalankan Laravel
-CMD ["bash","-lc","php artisan migrate --force || true; php artisan serve --host=0.0.0.0 --port=${PORT}"]
+# Jalankan Laravel (artisan discover, migrate dll dijalankan saat runtime)
+CMD ["bash","-lc","php artisan config:cache || true; php artisan route:cache || true; php artisan migrate --force || true; php artisan serve --host=0.0.0.0 --port=${PORT}"]
