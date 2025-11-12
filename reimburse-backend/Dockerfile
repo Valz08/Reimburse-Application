@@ -16,7 +16,9 @@ COPY . .
 RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader --no-scripts
 
 # Set permission agar bisa ditulis oleh user 1001 (tanpa chown)
-RUN chmod -R g+w storage bootstrap/cache || true
+RUN mkdir -p storage bootstrap/cache && \
+    chmod -R 777 storage bootstrap/cache
+
 
 EXPOSE 8000
 ENV PORT=8000
